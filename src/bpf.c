@@ -6,9 +6,6 @@
 #include <bcc/proto.h>
 #include <linux/sched.h>
 
-static int (*_bpf_trace_printk)(const char *fmt, int fmt_size, ...) =
-	(void *)BPF_FUNC_trace_printk;
-
 #define IP_169_254_169_254 0xFEA9FEA9
 
 struct imds_state_t {
@@ -44,6 +41,6 @@ static __inline bool is_imdsv1_request(const char *pkt) {
 
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
-    int ret = _bpf_trace_printk("trace_sock_sendmsg\n", 10);
+    int ret = bpf_printk("trace_sock_sendmsg\n");
     return ret;
 }
