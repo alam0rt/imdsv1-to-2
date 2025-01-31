@@ -7,7 +7,14 @@
 #include <linux/sched.h>
 
 #define IP_169_254_169_254 0xFEA9FEA9
-static const int ZERO = 0;
+
+struct imds_state_t {
+    bool token_requested;
+    char token[128];  // Store IMDSv2 token after we get it
+};
+
+// Map to hold IMDS state; key=0 for simplicity
+BPF_HASH(imds_state, u32, struct imds_state_t, 1);
 
 #define MAX_PKT 31*1024
 struct imds_http_data_t {
