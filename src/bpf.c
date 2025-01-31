@@ -6,9 +6,6 @@
 #include <bcc/proto.h>
 #include <linux/sched.h>
 
-static int (*_bpf_trace_printk)(const char *fmt, int fmt_size, ...) =
-	(void *)BPF_FUNC_trace_printk;
-
 #define IP_169_254_169_254 0xFEA9FEA9
 
 struct imds_state_t {
@@ -16,14 +13,13 @@ struct imds_state_t {
     char token[128];  // Store IMDSv2 token after we get it
 };
 
-
 // Map to hold log events
 struct log_event_t {
     char message[128];
 };
 BPF_PERF_OUTPUT(log_events);
 
-int log_event(struct pt_regs *ctx, const char *msg) {
+static int log_event(struct pt_regs *ctx, const char *msg) {
     struct log_event_t event = {};
     __builtin_strncpy(event.message, msg, sizeof(event.message));
     log_events.perf_submit(ctx, &event, sizeof(event));
