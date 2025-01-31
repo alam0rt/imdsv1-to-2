@@ -6,8 +6,8 @@
 #include <bcc/proto.h>
 #include <linux/sched.h>
 
-static int (*_bpf_trace_printk)(const char *fmt, int fmt_size, ...) =
-	(void *)BPF_FUNC_trace_printk;
+static int (*_bpf_trace_printk)(const char *fmt, ...) =
+	(void *)BPF_FUNC_printk;
 
 #define IP_169_254_169_254 0xFEA9FEA9
 
