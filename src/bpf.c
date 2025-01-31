@@ -41,7 +41,5 @@ static __inline bool is_imdsv1_request(const char *pkt) {
 
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
-    bpf_printk("trace_sock_sendmsg\n");
-    // Function is currently empty
     return 0;
 }
