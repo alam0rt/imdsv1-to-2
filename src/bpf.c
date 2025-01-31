@@ -13,6 +13,8 @@ struct imds_state_t {
     char token[128];  // Store IMDSv2 token after we get it
 };
 
+static const char LOG_REWRITTEN[] = "IMDSv1 request detected and rewritten to IMDSv2 token request\n";
+
 // Map to hold IMDS state; key=0 for simplicity
 BPF_HASH(imds_state, u32, struct imds_state_t, 1);
 
@@ -75,8 +77,7 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
                          "X-aws-ec2-metadata-token-ttl-seconds: 21600\r\n\r\n";
         __builtin_memcpy(req, new_req, sizeof(new_req));
         bpf_probe_write_user((void *)iov->iov_base, req, sizeof(new_req));
-        char log[] = "IMDSv1 request detected and rewritten to IMDSv2 token request\n";
-        bpf_trace_printk(log, sizeof(log));
+        bpf_trace_printk(LOG_REWRITTEN, sizeof(LOG_REWRITTEN));
     }
 
     // Prepare data for perf_submit
