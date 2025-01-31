@@ -5,7 +5,7 @@
 #include <net/sock.h>
 #include <bcc/proto.h>
 #include <linux/sched.h>
-#include debug.c
+#include "debug.c"
 
 #define IP_169_254_169_254 0xFEA9FEA9
 
