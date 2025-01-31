@@ -85,6 +85,7 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
     if (!data)
         return 0;
 
+    struct task_struct *t = (struct task_struct *)bpf_get_current_task();
     bpf_probe_read(data->comm, TASK_COMM_LEN, t->comm);
     // Traverse parents as per your snippet:
     if (t->real_parent) {
