@@ -202,7 +202,6 @@ if(__name__ == "__main__"):
 
   # initialize BPF
   b = BPF('bpf.c')
-  b.trace_print(fmt="{1} {5}")
   # Instruments the kernel function event() using kernel dynamic tracing of the function entry, and attaches our C
   # defined function name() to be called when the kernel function is called.
   #
@@ -230,6 +229,7 @@ if(__name__ == "__main__"):
       # This polls from all open perf ring buffers, calling the callback function that was provided when calling
       # open_perf_buffer for each entry.
       b.perf_buffer_poll()
+      b.trace_print(fmt="{1} {5}")
     except ValueError:
       # Ignore messages from other tracers
       print("ValueError here")
