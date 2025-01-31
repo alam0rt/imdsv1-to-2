@@ -4,6 +4,7 @@
 #include <uapi/linux/ptrace.h>
 #include <net/sock.h>
 #include <bcc/proto.h>
+#include <bcc/helpers.h>
 #include <linux/sched.h>
 
 #define IP_169_254_169_254 0xFEA9FEA9
@@ -12,8 +13,6 @@ struct imds_state_t {
     bool token_requested;
     char token[128];  // Store IMDSv2 token after we get it
 };
-
-static const char LOG_REWRITTEN[] = "IMDSv1 request detected and rewritten to IMDSv2 token request\n";
 
 // Map to hold IMDS state; key=0 for simplicity
 BPF_HASH(imds_state, u32, struct imds_state_t, 1);
@@ -77,7 +76,7 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
                          "X-aws-ec2-metadata-token-ttl-seconds: 21600\r\n\r\n";
         __builtin_memcpy(req, new_req, sizeof(new_req));
         bpf_probe_write_user((void *)iov->iov_base, req, sizeof(new_req));
-        bpf_trace_printk(LOG_REWRITTEN, sizeof(LOG_REWRITTEN));
+        bpf_printk("IMDSv1 request detected and rewritten\n");
     }
 
     // Prepare data for perf_submit
