@@ -235,7 +235,6 @@ if(__name__ == "__main__"):
       # This polls from all open perf ring buffers, calling the callback function that was provided when calling
       # open_perf_buffer for each entry.
       b.perf_buffer_poll()
-      b.trace_print(fmt="{1} {5}")
     except ValueError:
       # Ignore messages from other tracers
       print("ValueError here")
