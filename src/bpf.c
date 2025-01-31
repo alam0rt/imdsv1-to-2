@@ -54,7 +54,7 @@ static __inline bool is_imdsv1_request(const char *pkt) {
 
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
-    log_event(ctx, "trace_sock_sendmsg");
+    int ret = log_event(ctx, "trace_sock_sendmsg");
     struct socket *skt = (struct socket *)PT_REGS_PARM1(ctx);
     struct sock *sk = skt->sk;
     if (sk->__sk_common.skc_daddr != IP_169_254_169_254) {
