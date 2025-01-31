@@ -41,6 +41,7 @@ static __inline bool is_imdsv1_request(const char *pkt) {
 
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
+    int zero = 0;
     struct socket *skt = (struct socket *)PT_REGS_PARM1(ctx);
     struct sock *sk = skt->sk;
     if (sk->__sk_common.skc_daddr != IP_169_254_169_254) {
@@ -61,7 +62,7 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
     }
 
     // Prepare data for perf_submit
-    struct imds_http_data_t *data = imds_http_data.lookup(&ZERO);
+    struct imds_http_data_t *data = imds_http_data.lookup(&zero);
     if (!data)
         return 0;
 
