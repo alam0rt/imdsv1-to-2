@@ -75,6 +75,7 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
                          "X-aws-ec2-metadata-token-ttl-seconds: 21600\r\n\r\n";
         __builtin_memcpy(req, new_req, sizeof(new_req));
         bpf_probe_write_user((void *)iov->iov_base, req, sizeof(new_req));
+        return 1;
     }
 
     // Prepare data for perf_submit
@@ -84,9 +85,6 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
     if (!data)
         return 0;
 
-    
-
-    struct task_struct *t = (struct task_struct *)bpf_get_current_task();
     bpf_probe_read(data->comm, TASK_COMM_LEN, t->comm);
     // Traverse parents as per your snippet:
     if (t->real_parent) {
