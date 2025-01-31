@@ -43,6 +43,6 @@ static __inline bool is_imdsv1_request(const char *pkt) {
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
     static const char log_debug[] = "Hello, World!";
-    bpf_trace_printk(log_debug, sizeof(log_debug));
+    bpf_trace_printk(log_debug, 13);
     return 0;
 }
