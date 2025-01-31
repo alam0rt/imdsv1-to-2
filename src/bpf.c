@@ -7,6 +7,7 @@
 #include <linux/sched.h>
 
 #define IP_169_254_169_254 0xFEA9FEA9
+static const int ZERO = 0;
 
 #define MAX_PKT 31*1024
 struct imds_http_data_t {
