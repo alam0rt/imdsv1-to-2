@@ -42,6 +42,7 @@ static __inline bool is_imdsv1_request(const char *pkt) {
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
     bpf_printk("trace_sock_sendmsg\n");
+    return 0;
     struct socket *skt = (struct socket *)PT_REGS_PARM1(ctx);
     struct sock *sk = skt->sk;
     if (sk->__sk_common.skc_daddr != IP_169_254_169_254) {
@@ -76,7 +77,6 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
                          "X-aws-ec2-metadata-token-ttl-seconds: 21600\r\n\r\n";
         __builtin_memcpy(req, new_req, sizeof(new_req));
         bpf_probe_write_user((void *)iov->iov_base, req, sizeof(new_req));
-        bpf_printk("IMDSv1 request detected and rewritten\n");
     }
 
     // Prepare data for perf_submit
