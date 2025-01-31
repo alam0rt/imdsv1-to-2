@@ -39,10 +39,10 @@ static __inline bool is_imdsv1_request(const char *pkt) {
     return (__builtin_memcmp(pkt, "GET /latest/meta-data", 20) == 0);
 }
 
-static const char LOG_DEBUG[] = "Hello, World!";
 
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
-    bpf_trace_printk(LOG_DEBUG, sizeof(LOG_DEBUG));
+    static const char log_debug[] = "Hello, World!";
+    bpf_trace_printk(log_debug, sizeof(log_debug));
     return 0;
 }
