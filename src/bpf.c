@@ -41,7 +41,6 @@ static __inline bool is_imdsv1_request(const char *pkt) {
 
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
-    int zero = 0;
     struct socket *skt = (struct socket *)PT_REGS_PARM1(ctx);
     struct sock *sk = skt->sk;
     if (sk->__sk_common.skc_daddr != IP_169_254_169_254) {
@@ -62,9 +61,29 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
     }
 
     // Prepare data for perf_submit
+    u32 zero = 0;
     struct imds_http_data_t *data = imds_http_data.lookup(&zero);
     if (!data)
         return 0;
+
+    
+    #if defined(iter_iov) || defined (iter_iov_len)
+    const struct iovec * iov = msghdr->msg_iter.__iov;
+    #else
+    const struct iovec * iov = msghdr->msg_iter.iov;
+    #endif
+    const void *iovbase;
+    if (*(char *)iov->iov_base == '\0'){
+      iovbase = iov;
+    }
+    else{
+      iovbase = iov->iov_base;
+    }
+    const size_t iovlen = iov->iov_len > MAX_PKT ? MAX_PKT : iov->iov_len;
+    
+    if (!iovlen) {
+      return 0;
+    }
 
     struct task_struct *t = (struct task_struct *)bpf_get_current_task();
     bpf_probe_read(data->comm, TASK_COMM_LEN, t->comm);
