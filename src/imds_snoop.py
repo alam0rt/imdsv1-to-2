@@ -126,6 +126,9 @@ def gen_log_msg(is_v2: bool, event) -> str:
 
     return log_msg
 
+def print_log_event(cpu, data, size):
+   event = b["log_events"].event(data)
+   print(event.msg)
 
 def print_imds_event(cpu, data, size):
     # let bcc generate the data structure from C declaration automatically given the eBPF event reference (int) -> essentially
@@ -217,6 +220,9 @@ if(__name__ == "__main__"):
   # This operates on a table as defined in BPF via BPF_PERF_OUTPUT() [Defined in C code as imds_events, line 32], and
   # associates the callback Python function to be called when data is available in the perf ring buffer.
   b["imds_events"].open_perf_buffer(print_imds_event)
+
+  # Print logs
+  b["log_events"].open_perf_buffer(print_log_event)
 
   # header
   print("Starting ImdsPacketAnalyzer...")
