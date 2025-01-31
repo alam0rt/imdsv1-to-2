@@ -5,5 +5,6 @@
 
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
-    return bpf_printk("trace_sock_sendmsg\n");
+    bpf_printk("trace_sock_sendmsg\n");
+    return 0;
 }
