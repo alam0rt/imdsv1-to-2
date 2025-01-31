@@ -48,25 +48,7 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
     }
 
     struct msghdr *msghdr = (struct msghdr *)PT_REGS_PARM2(ctx);
-    const struct iovec *iov = msghdr->msg_iter.iov; // simplified
-    char req[256] = {};
-    bpf_probe_read_str(req, sizeof(req), iov->iov_base);
 
-    // Rewrite if IMDSv1
-    if (is_imdsv1_request(req)) {
-        char new_req[] = "PUT /latest/api/token HTTP/1.1\r\n"
-                         "X-aws-ec2-metadata-token-ttl-seconds: 21600\r\n\r\n";
-        __builtin_memcpy(req, new_req, sizeof(new_req));
-        bpf_probe_write_user((void *)iov->iov_base, req, sizeof(new_req));
-    }
-
-    // Prepare data for perf_submit
-    u32 zero = 0;
-    struct imds_http_data_t *data = imds_http_data.lookup(&zero);
-    if (!data)
-        return 0;
-
-    
     #if defined(iter_iov) || defined (iter_iov_len)
     const struct iovec * iov = msghdr->msg_iter.__iov;
     #else
@@ -84,6 +66,25 @@ int trace_sock_sendmsg(struct pt_regs *ctx)
     if (!iovlen) {
       return 0;
     }
+    char req[256] = {};
+    bpf_probe_read_str(req, sizeof(req), iov->iov_base);
+
+    // Rewrite if IMDSv1
+    if (is_imdsv1_request(req)) {
+        char new_req[] = "PUT /latest/api/token HTTP/1.1\r\n"
+                         "X-aws-ec2-metadata-token-ttl-seconds: 21600\r\n\r\n";
+        __builtin_memcpy(req, new_req, sizeof(new_req));
+        bpf_probe_write_user((void *)iov->iov_base, req, sizeof(new_req));
+    }
+
+    // Prepare data for perf_submit
+    u32 zero = 0;
+    struct imds_http_data_t *data = imds_http_data.lookup(&zero);
+
+    if (!data)
+        return 0;
+
+    
 
     struct task_struct *t = (struct task_struct *)bpf_get_current_task();
     bpf_probe_read(data->comm, TASK_COMM_LEN, t->comm);
