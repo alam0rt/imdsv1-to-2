@@ -202,6 +202,7 @@ if(__name__ == "__main__"):
 
   # initialize BPF
   b = BPF('bpf.c')
+  b.trace_print(fmt="{1} {5}")
   # Instruments the kernel function event() using kernel dynamic tracing of the function entry, and attaches our C
   # defined function name() to be called when the kernel function is called.
   #
