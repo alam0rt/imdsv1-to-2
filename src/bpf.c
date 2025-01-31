@@ -31,7 +31,7 @@ struct imds_http_data_t {
 BPF_PERF_OUTPUT(imds_events);
 
 // single element per-cpu array to hold the current event off the stack
-BPF_PERCPU_ARRAY(imds_http_data,struct imds_http_data_t,1);
+BPF_PERCPU_ARRAY(imds_http_data, struct imds_http_data_t, 1);
 
 // Simple helper to detect an IMDSv1 GET request
 static __inline bool is_imdsv1_request(const char *pkt) {
@@ -42,5 +42,6 @@ static __inline bool is_imdsv1_request(const char *pkt) {
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
     bpf_printk("trace_sock_sendmsg\n");
+    // Function is currently empty
     return 0;
 }
