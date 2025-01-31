@@ -5,7 +5,7 @@
 #include <net/sock.h>
 #include <bcc/proto.h>
 #include <linux/sched.h>
-#include "/usr/include/bpf/bpf_helpers.h"
+#include "<bpf/bpf_helpers.h>"
 
 #define IP_169_254_169_254 0xFEA9FEA9
 
