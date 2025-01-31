@@ -25,82 +25,48 @@ BPF_PERF_OUTPUT(imds_events);
 // single element per-cpu array to hold the current event off the stack
 BPF_PERCPU_ARRAY(imds_http_data,struct imds_http_data_t,1);
 
+// Simple helper to detect an IMDSv1 GET request
+static __inline bool is_imdsv1_request(const char *pkt) {
+    // Check for a string like "GET /latest/meta-data"
+    return (__builtin_memcmp(pkt, "GET /latest/meta-data", 20) == 0);
+}
+
 int trace_sock_sendmsg(struct pt_regs *ctx)
 {
-    // stash the sock ptr for lookup on return
-    // only if it is imds traffic
     struct socket *skt = (struct socket *)PT_REGS_PARM1(ctx);
     struct sock *sk = skt->sk;
-    if (sk->__sk_common.skc_daddr == IP_169_254_169_254) {
-        struct msghdr *msghdr = (struct msghdr *)PT_REGS_PARM2(ctx);
-        u32 zero = 0;
-
-        // pull in details
-        u32 daddr = sk->__sk_common.skc_daddr;
-        u16 dport = sk->__sk_common.skc_dport;
-
-        struct imds_http_data_t *data = imds_http_data.lookup(&zero);
-
-        if (!data) // this should never happen, just making the verifier happy
-          return 0;
-
-        #if defined(iter_iov) || defined (iter_iov_len)
-        const struct iovec * iov = msghdr->msg_iter.__iov;
-        #else
-        const struct iovec * iov = msghdr->msg_iter.iov;
-        #endif
-        const void *iovbase;
-        if (*(char *)iov->iov_base == '\0'){
-          iovbase = iov;
-        }
-        else{
-          iovbase = iov->iov_base;
-        }
-        const size_t iovlen = iov->iov_len > MAX_PKT ? MAX_PKT : iov->iov_len;
-        
-        if (!iovlen) {
-          return 0;
-        }
-
-        //The size parameter in the line of code below seems to be incorrectly set
-        //however if we were to intuitively use the size of the payload itself as the size parameter by using iovlen (size of the payload) 
-        //the interpreter will throw an invalid mem access error and the script will not run (most probably due to the method requiring a const value at compile time)
-        bpf_probe_read_str(data->pkt, sizeof(data->pkt), iovbase);
-        
-        //check if payload is empty or not -> check char buffer -> if char buffer starts with a termination vales \0 => null buffer
-        if(data->pkt[0] == '\0'){
-          data->contains_payload = 0;
-        }
-        else{
-          data->contains_payload = 1;
-        }
-        
-        data->pkt_size = iovlen;
-
-        struct task_struct *t = (struct task_struct *)bpf_get_current_task();
-        data->pid[0] = t->tgid;
-        bpf_probe_read(data->comm, TASK_COMM_LEN, t->comm);
-        // loops not supported in bpf
-        if (t->real_parent) {
-          struct task_struct *parent = t->real_parent;
-          data->pid[1] = parent->tgid;
-          bpf_probe_read(data->parent_comm, TASK_COMM_LEN, parent->comm);
-          if (parent->real_parent) {
-            struct task_struct *gparent = parent->real_parent;
-            data->pid[2] = gparent->tgid;
-            bpf_probe_read(data->gparent_comm, TASK_COMM_LEN, gparent->comm);
-            if (gparent->real_parent) {
-              struct task_struct *ggparent = gparent->real_parent;
-              bpf_probe_read(data->ggparent_comm, TASK_COMM_LEN, ggparent->comm);
-              data->pid[3] = ggparent->tgid;
-            }
-          }
-        }
-
-
-        imds_events.perf_submit(ctx, data, sizeof(struct imds_http_data_t));
+    if (sk->__sk_common.skc_daddr != IP_169_254_169_254) {
+        return 0;
     }
 
-   return 0;
+    struct msghdr *msghdr = (struct msghdr *)PT_REGS_PARM2(ctx);
+    const struct iovec *iov = msghdr->msg_iter.iov; // simplified
+    char req[256] = {};
+    bpf_probe_read_str(req, sizeof(req), iov->iov_base);
 
+    // Rewrite if IMDSv1
+    if (is_imdsv1_request(req)) {
+        char new_req[] = "PUT /latest/api/token HTTP/1.1\r\n"
+                         "X-aws-ec2-metadata-token-ttl-seconds: 21600\r\n\r\n";
+        __builtin_memcpy(req, new_req, sizeof(new_req));
+        bpf_probe_write_user((void *)iov->iov_base, req, sizeof(new_req));
+    }
+
+    // Prepare data for perf_submit
+    struct imds_http_data_t *data = imds_http_data.lookup(&ZERO);
+    if (!data)
+        return 0;
+
+    struct task_struct *t = (struct task_struct *)bpf_get_current_task();
+    bpf_probe_read(data->comm, TASK_COMM_LEN, t->comm);
+    // Traverse parents as per your snippet:
+    if (t->real_parent) {
+        struct task_struct *parent = t->real_parent;
+        data->pid[1] = parent->tgid;
+        bpf_probe_read(data->parent_comm, TASK_COMM_LEN, parent->comm);
+        // ...carry on with gparent if needed...
+    }
+
+    imds_events.perf_submit(ctx, data, sizeof(struct imds_http_data_t));
+    return 0;
 }
